@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>ふたりの旅のきろく</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;
+  background:#faf6f0;color:#5a4a3a;line-height:1.8;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  min-height:100vh;min-height:100dvh;
+}
+.container{max-width:480px;margin:0 auto;padding:20px 16px 40px}
+
+/* ── ヘッダー ── */
+.header{text-align:center;padding:20px 0 10px}
+.header h1{font-size:1.3em;color:#8b7355;letter-spacing:.08em}
+.header .sub{font-size:.75em;color:#b5a48a;margin-top:4px}
+
+/* ── カード ── */
+.trip-card{
+  background:#fff;border-radius:16px;padding:20px;margin:14px 0;
+  box-shadow:0 2px 12px rgba(139,115,85,.1);
+  cursor:pointer;transition:transform .15s;position:relative
+}
+.trip-card:active{transform:scale(.98)}
+.trip-card .emoji-badge{font-size:1.5em;position:absolute;right:16px;top:16px}
+.trip-card .date{font-size:.78em;color:#b5a48a}
+.trip-card .title{font-size:1.1em;font-weight:600;margin-top:2px;color:#6b5b4a}
+.trip-card .subtitle{font-size:.82em;color:#9a8a75;margin-top:4px}
+.trip-card.upcoming{border:2px dashed #d4c5a9}
+.upcoming-tag{
+  display:inline-block;font-size:.7em;background:#f0e8d8;color:#a08c6a;
+  padding:2px 10px;border-radius:20px;margin-top:6px
+}
+
+/* ── 詳細 ── */
+#detail-page{display:none;opacity:0;transition:opacity .25s}
+#detail-page.active{display:block;opacity:1}
+.back-btn{
+  color:#b5a48a;font-size:.9em;cursor:pointer;padding:8px 0;display:inline-block
+}
+.detail-header{text-align:center;padding:16px 0}
+.detail-header .date{font-size:.82em;color:#b5a48a}
+.detail-header .title{font-size:1.3em;font-weight:700;color:#6b5b4a;margin-top:4px}
+
+/* ── タイムライン ── */
+.timeline{padding:10px 0 20px;position:relative}
+.day-label{
+  font-size:.78em;color:#b5a48a;font-weight:600;padding:12px 0 4px;
+  display:flex;align-items:center;gap:8px
+}
+.day-label::before{
+  content:'';width:10px;height:10px;border-radius:50%;background:#d4c5a9;flex-shrink:0
+}
+.timeline-item{
+  margin:8px 0 8px 14px;padding-left:20px;
+  border-left:2px solid #e8dfd2;position:relative
+}
+.memo-box{
+  background:#fff;border-radius:12px;padding:16px;
+  box-shadow:0 1px 6px rgba(139,115,85,.08);
+  font-size:.92em;line-height:1.7;white-space:pre-wrap
+}
+.edit-hint{
+  text-align:right;font-size:.72em;color:#c5b8a0;margin-top:4px;cursor:pointer
+}
+
+/* ── 写真 ── */
+.photo-grid{
+  display:flex;flex-wrap:wrap;gap:6px;margin:8px 0
+}
+.photo-slot{
+  width:calc(50% - 3px);aspect-ratio:1;border-radius:10px;overflow:hidden;
+  background:#f0e8d8;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;border:2px dashed #d4c5a9
+}
+.photo-slot.has-photo{border:none}
+.photo-slot img{width:100%;height:100%;object-fit:cover}
+.photo-slot .placeholder{font-size:.78em;color:#b5a48a;text-align:center;padding:8px}
+.photo-remove{
+  position:absolute;top:4px;right:4px;width:24px;height:24px;
+  background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;
+  font-size:.8em;cursor:pointer;display:flex;align-items:center;justify-content:center
+}
+.photo-actions{
+  display:flex;gap:16px;justify-content:center;margin:6px 0;font-size:.78em
+}
+.photo-actions span{color:#b5a48a;cursor:pointer}
+.photo-actions span:active{color:#8b7355}
+
+/* ── 挿入ボタン ── */
+.insert-btn{
+  display:flex;align-items:center;justify-content:center;
+  margin:4px 0 4px 14px;padding-left:20px;
+  border-left:2px solid #e8dfd2;
+}
+.insert-btn button{
+  background:none;border:2px dashed #d4c5a9;border-radius:20px;
+  color:#b5a48a;font-size:.75em;padding:4px 16px;cursor:pointer;
+  transition:all .15s
+}
+.insert-btn button:active{background:#f0e8d8;color:#8b7355}
+
+/* ── 追加 ── */
+.add-entry-bar{
+  margin:16px 0 0 14px;padding-left:20px;
+  border-left:2px solid #e8dfd2;text-align:center
+}
+.add-entry-bar button{
+  background:none;border:none;color:#b5a48a;font-size:.85em;cursor:pointer;
+  padding:10px 20px
+}
+.add-entry-bar button:active{color:#8b7355}
+
+/* ── 旅の追加・削除 ── */
+.add-trip-btn{
+  text-align:center;margin:20px 0;
+}
+.add-trip-btn button{
+  background:#fff;border:2px dashed #d4c5a9;border-radius:16px;
+  color:#b5a48a;font-size:.88em;padding:14px 28px;cursor:pointer;width:100%
+}
+.add-trip-btn button:active{background:#f0e8d8}
+.delete-trip-btn{
+  text-align:center;margin:30px 0 10px;
+}
+.delete-trip-btn button{
+  background:none;border:none;color:#d4a0a0;font-size:.78em;cursor:pointer
+}
+
+/* ── バックアップ ── */
+.backup-btn{
+  position:absolute;top:20px;right:16px;background:none;border:none;
+  color:#b5a48a;font-size:.78em;cursor:pointer
+}
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);
+  z-index:100;align-items:center;justify-content:center
+}
+.modal-overlay.show{display:flex}
+.modal-box{
+  background:#faf6f0;border-radius:16px;padding:28px 24px;
+  max-width:320px;width:90%;text-align:center
+}
+.modal-box h3{font-size:1em;color:#6b5b4a;margin-bottom:16px}
+.modal-btn{
+  display:block;width:100%;padding:12px;margin:8px 0;
+  background:#fff;border:1px solid #e0d6c6;border-radius:10px;
+  color:#6b5b4a;font-size:.88em;cursor:pointer
+}
+.modal-btn:active{background:#f0e8d8}
+.modal-close{
+  margin-top:12px;background:none;border:none;color:#b5a48a;
+  font-size:.82em;cursor:pointer
+}
+.hidden-input{display:none}
+
+/* ── トースト ── */
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#6b5b4a;color:#fff;padding:10px 24px;border-radius:20px;
+  font-size:.82em;opacity:0;transition:all .3s;pointer-events:none;z-index:200
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── フッター ── */
+.footer{text-align:center;padding:30px 0 10px;font-size:.75em;color:#c5b8a0}
+</style>
+</head>
+<body>
+
+<div class="container" id="top-page" style="position:relative">
+  <button class="backup-btn" onclick="openBackupModal()">バックアップ</button>
+  <div class="header">
+    <h1>ふたりの旅のきろく</h1>
+    <div class="sub">ぜんぶ宝物にしてく人生だ。</div>
+  </div>
+  <div id="trip-list"></div>
+  <div class="add-trip-btn"><button onclick="addTrip()">＋ あたらしい旅を追加</button></div>
+  <div class="footer">ふたりの足あと</div>
+</div>
+
+<div class="container" id="detail-page">
+  <span class="back-btn" onclick="showList()">← もどる</span>
+  <div class="detail-header">
+    <div class="date" id="detail-date"></div>
+    <div class="title" id="detail-title"></div>
+  </div>
+  <div class="timeline" id="timeline"></div>
+  <div class="delete-trip-btn"><button onclick="deleteTrip()">この旅をけす</button></div>
+</div>
+
+<div class="modal-overlay" id="backup-modal">
+  <div class="modal-box">
+    <h3>バックアップ</h3>
+    <button class="modal-btn" onclick="exportData()">データを書き出す</button>
+    <button class="modal-btn" onclick="document.getElementById('import-file').click()">データを読みこむ</button>
+    <input type="file" id="import-file" class="hidden-input" accept=".json" onchange="importData(this)">
+    <button class="modal-close" onclick="closeBackupModal()">とじる</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ──── デフォルトデータ ────
+const defaultTrips=[
+  {
+    id:'phuket2025',date:'2025年 夏',title:'プーケット',emoji:'🌺',subtitle:'第二章のはじまり',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:'ここから、おれたちの第二章がはじまった。'},
+      {type:'photo',day:'1日目',label:'プーケットの写真',photos:[]}
+    ]
+  },
+  {
+    id:'boso2025',date:'2025.10',title:'房総半島',emoji:'🌊',subtitle:'海と風',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:''},
+      {type:'photo',day:'1日目',label:'房総の写真',photos:[]}
+    ]
+  },
+  {
+    id:'takao2025',date:'2025.11',title:'高尾山',emoji:'🍁',subtitle:'秋の山道',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:''},
+      {type:'photo',day:'1日目',label:'高尾山の写真',photos:[]}
+    ]
+  },
+  {
+    id:'sengokuhara2025',date:'2025.12',title:'仙石原',emoji:'🌾',subtitle:'すすきの海',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:''},
+      {type:'photo',day:'1日目',label:'仙石原の写真',photos:[]}
+    ]
+  },
+  {
+    id:'suwa2025',date:'2025.12',title:'諏訪湖',emoji:'💍',subtitle:'指輪と片倉館',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:''},
+      {type:'photo',day:'1日目',label:'諏訪湖の写真',photos:[]}
+    ]
+  },
+  {
+    id:'izu2026',date:'2026.3.9 – 10',title:'伊豆',emoji:'🌵',subtitle:'サボテンと灯台と海',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:'【門脇崎灯台】　外に出ないで一周できたから、安心だった。'},
+      {type:'photo',day:'1日目',label:'伊豆の写真',photos:[]},
+      {type:'memo',day:'1日目',memo:'【城ヶ崎海岸】溶岩だらけの自己責任ゾーン。見下ろすと断崖で震えた。海青い。波荒い。'},
+      {type:'photo',day:'1日目',label:'城ヶ崎の写真',photos:[]},
+      {type:'memo',day:'1日目',memo:'【大室山】リフトで山頂へ。火口をぐるっと一周。風がすごかった。'},
+      {type:'photo',day:'1日目',label:'大室山の写真',photos:[]},
+      {type:'memo',day:'2日目',memo:'【シャボテン公園】サボテン3本つれて帰った。月影丸・アサヒ丸・武者雲。「ここにいる」の鉢。'},
+      {type:'photo',day:'2日目',label:'シャボテン公園の写真',photos:[]},
+      {type:'memo',day:'2日目',memo:'【日の出屋旅館】'},
+      {type:'photo',day:'2日目',label:'旅館の写真',photos:[]}
+    ]
+  },
+  {
+    id:'kirishima2026',date:'2026.4.16 – 18',title:'霧島温泉',emoji:'♨️',subtitle:'これからの旅',upcoming:true,
+    entries:[
+      {type:'memo',day:'1日目',memo:''},
+      {type:'photo',day:'1日目',label:'霧島の写真',photos:[]}
+    ]
+  }
+];
+
+// ──── ストレージ ────
+const TRIPS_KEY='futari_trips';
+const PHOTOS_KEY='futari_photos';
+
+function loadTrips(){
+  const s=localStorage.getItem(TRIPS_KEY);
+  if(s){
+    let t=JSON.parse(s);
+    // entriesの中のphotosフィールドがない古いデータの互換処理
+    t.forEach(trip=>{
+      if(!trip.entries) trip.entries=[];
+      trip.entries.forEach(e=>{
+        if(e.type==='photo' && !e.photos) e.photos=[];
+      });
+    });
+    return t;
+  }
+  return JSON.parse(JSON.stringify(defaultTrips));
+}
+function saveTrips(){localStorage.setItem(TRIPS_KEY,JSON.stringify(trips))}
+function loadPhotos(){const s=localStorage.getItem(PHOTOS_KEY);return s?JSON.parse(s):{}}
+function savePhotos(){localStorage.setItem(PHOTOS_KEY,JSON.stringify(photos))}
+
+let trips=loadTrips();
+let photos=loadPhotos();
+let currentTripIndex=null;
+
+// ──── ユーティリティ ────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ──── バックアップ ────
+function openBackupModal(){document.getElementById('backup-modal').classList.add('show')}
+function closeBackupModal(){document.getElementById('backup-modal').classList.remove('show')}
+
+function exportData(){
+  const data={version:2,exported:new Date().toISOString(),trips:trips,photos:photos};
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='旅のきろく_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(url);
+  closeBackupModal();toast('バックアップを保存したぜ ☆');
+}
+
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.trips){trips=data.trips;saveTrips()}
+      if(data.photos){photos=data.photos;savePhotos()}
+      renderList();closeBackupModal();toast('データを読みこんだぜ ☆');
+    }catch(err){toast('ファイルが読めなかった…')}
+  };
+  reader.readAsText(file);input.value='';
+}
+
+// ──── 一覧表示 ────
+function renderList(){
+  const list=document.getElementById('trip-list');list.innerHTML='';
+  trips.forEach((trip,i)=>{
+    const card=document.createElement('div');
+    card.className='trip-card'+(trip.upcoming?' upcoming':'');
+    card.innerHTML=`
+      <span class="emoji-badge">${trip.emoji||''}</span>
+      <div class="date">${trip.date}</div>
+      <div class="title">${trip.title}</div>
+      <div class="subtitle">${trip.subtitle||''}</div>
+      ${trip.upcoming?'<span class="upcoming-tag">これから</span>':''}
+    `;
+    card.onclick=()=>showDetail(i);
+    list.appendChild(card);
+  });
+}
+
+// ──── 詳細表示 ────
+function showDetail(index){
+  currentTripIndex=index;
+  const trip=trips[index];
+  document.getElementById('top-page').style.display='none';
+  const detail=document.getElementById('detail-page');
+  detail.classList.add('active');
+  document.getElementById('detail-date').textContent=trip.date;
+  document.getElementById('detail-title').textContent=trip.title+' '+(trip.emoji||'');
+  renderTimeline();
+  window.scrollTo(0,0);
+}
+
+function renderTimeline(){
+  const trip=trips[currentTripIndex];
+  const timeline=document.getElementById('timeline');
+  timeline.innerHTML='';
+  let lastDay='';
+
+  trip.entries.forEach((entry,i)=>{
+    // 日付ラベル
+    if(entry.day && entry.day!==lastDay){
+      lastDay=entry.day;
+      const dayEl=document.createElement('div');
+      dayEl.className='day-label';dayEl.textContent=entry.day;
+      timeline.appendChild(dayEl);
+    }
+
+    // 挿入ボタン（各エントリの前）
+    const ins=document.createElement('div');
+    ins.className='insert-btn';
+    ins.innerHTML=`<button onclick="insertEntry(${i})">＋ ここに追加</button>`;
+    timeline.appendChild(ins);
+
+    // エントリ本体
+    if(entry.type==='memo'){
+      const item=document.createElement('div');item.className='timeline-item';
+      item.innerHTML=`
+        <div class="memo-box">${entry.memo||'（タップしてメモを入れてね）'}</div>
+        <div class="edit-hint" onclick="editMemo(${i})">タップして編集</div>
+      `;
+      timeline.appendChild(item);
+    }
+
+    if(entry.type==='photo'){
+      const item=document.createElement('div');item.className='timeline-item';
+      let grid='<div class="photo-grid">';
+      const photoList=entry.photos||[];
+      photoList.forEach((dataUrl,pi)=>{
+        grid+=`<div class="photo-slot has-photo">
+          <img src="${dataUrl}">
+          <button class="photo-remove" onclick="removePhoto(${i},${pi})">✕</button>
+        </div>`;
+      });
+      if(photoList.length<6){
+        grid+=`<div class="photo-slot" onclick="addPhoto(${i})">
+          <span class="placeholder">📷<br>タップして<br>写真を追加</span>
+        </div>`;
+      }
+      grid+='</div>';
+      item.innerHTML=grid+`
+        <div class="photo-actions">
+          <span onclick="addPhoto(${i})">＋ 写真を追加</span>
+          <span onclick="removePhotoEntry(${i})">この枠を消す</span>
+        </div>`;
+      timeline.appendChild(item);
+    }
+  });
+
+  // 末尾の挿入ボタン（＝末尾に追加）
+  const addBar=document.createElement('div');
+  addBar.className='add-entry-bar';
+  addBar.innerHTML=`<button onclick="addEntry()">＋ きろくを追加する</button>`;
+  timeline.appendChild(addBar);
+}
+
+// ──── 挿入 ────
+function insertEntry(index){
+  const trip=trips[currentTripIndex];
+  const dayAtPosition=trip.entries[index]?trip.entries[index].day:'1日目';
+  const choice=confirm('写真の枠もつける？\n\n「OK」→ メモ＋写真\n「キャンセル」→ メモだけ');
+  const newEntries=[{type:'memo',day:dayAtPosition,memo:''}];
+  if(choice) newEntries.push({type:'photo',day:dayAtPosition,label:'写真',photos:[]});
+  trip.entries.splice(index,0,...newEntries);
+  saveTrips();renderTimeline();
+  toast('ここに追加したぜ ☆');
+}
+
+// ──── 末尾に追加 ────
+function addEntry(){
+  const trip=trips[currentTripIndex];
+  const days=[...new Set(trip.entries.map(e=>e.day).filter(Boolean))];
+  let day='1日目';
+  if(days.length>0){
+    const input=prompt('何日目？（例：1日目、2日目）',days[days.length-1]);
+    if(input===null)return;
+    day=input||days[days.length-1];
+  }
+  trip.entries.push({type:'memo',day:day,memo:''});
+  if(confirm('写真の枠もつける？')){
+    trip.entries.push({type:'photo',day:day,label:'写真',photos:[]});
+  }
+  saveTrips();renderTimeline();
+  toast('きろくを追加したぜ ☆');
+}
+
+// ──── メモ編集 ────
+function editMemo(index){
+  const trip=trips[currentTripIndex];
+  const entry=trip.entries[index];
+  const input=prompt('メモを編集',entry.memo||'');
+  if(input===null)return;
+  entry.memo=input;
+  saveTrips();renderTimeline();
+}
+
+// ──── 写真 ────
+function addPhoto(entryIndex){
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';
+  input.onchange=function(){
+    const file=this.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const trip=trips[currentTripIndex];
+      const entry=trip.entries[entryIndex];
+      if(!entry.photos) entry.photos=[];
+      entry.photos.push(e.target.result);
+      saveTrips();renderTimeline();
+      toast('写真を追加したぜ ☆');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+
+function removePhoto(entryIndex,photoIndex){
+  if(!confirm('この写真をけす？'))return;
+  const trip=trips[currentTripIndex];
+  trip.entries[entryIndex].photos.splice(photoIndex,1);
+  saveTrips();renderTimeline();
+}
+
+function removePhotoEntry(entryIndex){
+  if(!confirm('この写真枠をけす？'))return;
+  const trip=trips[currentTripIndex];
+  trip.entries.splice(entryIndex,1);
+  saveTrips();renderTimeline();
+}
+
+// ──── 旅の追加 ────
+function addTrip(){
+  const title=prompt('旅のなまえ（例：霧島温泉）');
+  if(!title)return;
+  const date=prompt('いつ？（例：2026.4.16 – 18）','');
+  const emoji=prompt('絵文字ひとつ選んで（例：♨️ 🌊 🌸）','');
+  trips.push({
+    id:'trip_'+Date.now(),date:date||'',title:title,emoji:emoji||'',
+    subtitle:'',upcoming:false,
+    entries:[
+      {type:'memo',day:'1日目',memo:''},
+      {type:'photo',day:'1日目',label:'写真',photos:[]}
+    ]
+  });
+  saveTrips();renderList();
+  toast('あたらしい旅を追加したぜ ☆');
+}
+
+// ──── 旅の削除 ────
+function deleteTrip(){
+  if(!confirm('この旅をまるごと削除する？\n（バックアップがあれば復元できるぜ）'))return;
+  trips.splice(currentTripIndex,1);
+  saveTrips();showList();renderList();
+  toast('削除したぜ');
+}
+
+// ──── 一覧に戻る ────
+function showList(){
+  document.getElementById('detail-page').classList.remove('active');
+  document.getElementById('top-page').style.display='block';
+  currentTripIndex=null;window.scrollTo(0,0);
+}
+
+renderList();
+</script>
+</body>
+</html>
