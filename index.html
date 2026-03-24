@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+#<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -236,7 +236,7 @@ const bgStyle=`style="border-left:4px solid ${borderColor};background:#fff8f4"`;
           <div class="title">${esc(e.title)}</div>
           ${e.note?'<div class="note-text">'+esc(e.note)+'</div>':''}
           <div class="date-tag">${esc(e.date)}</div>
-          ${genre?`<span class="genre-tag" style="background:${genre.color};color:#fff">${esc(genre.name)}</span>`:''}
+          ${genre?`<span class="genre-tag" style="background:${adjustColor(genre.color,0.7)}">${esc(genre.name)}</span>`:''}
           ${hasPhoto?'<img class="entry-img" src="'+photos[e.id]+'">':''}
           <div class="emoji-tag">${e.emoji||''}</div>
         </div>`;
