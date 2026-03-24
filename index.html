@@ -224,8 +224,8 @@ function render(){
       items.forEach(e=>{
         const hasPhoto=photos[e.id];
         const genre=e.genre?getGenre(e.genre):null;
-        const bgColor=genre?hexToRgba(genre.color,0.18):'';
-        const bgStyle=bgColor?`style="background:${bgColor}"`:'';
+        const borderColor=genre?adjustColor(genre.color,0.7):'transparent';
+const bgStyle=`style="border-left:4px solid ${borderColor};background:#fff8f4"`;
         html+=`<div class="entry" data-id="${e.id}" draggable="${mode==='edit'}" ${bgStyle}
           onclick="tapEntry(${e.id})"
           ondragstart="ds(event,${e.id})" ondragover="dov(event)" ondragenter="den(event)" ondragleave="dl(event)" ondrop="dd(event,${e.id})" ondragend="de(event)">
